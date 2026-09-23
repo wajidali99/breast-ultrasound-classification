@@ -50,7 +50,8 @@ def get_paths() -> dict:
         data_root = Path(os.environ["SM_CHANNEL_TRAIN"])
         out_dir = Path(os.environ.get("SM_MODEL_DIR", "/opt/ml/model"))
     elif env == "kaggle":
-        data_root = Path("/kaggle/input/breast-ultrasound-images-dataset/Dataset_BUSI_with_GT")
+        hits = sorted(Path("/kaggle/input").rglob("Dataset_BUSI_with_GT"))
+        data_root = hits[0] if hits else Path("/kaggle/input/Dataset_BUSI_with_GT")
         out_dir = Path("/kaggle/working")
     else:
         data_root = Path(os.environ.get("BUSI_ROOT", "data/Dataset_BUSI_with_GT"))
