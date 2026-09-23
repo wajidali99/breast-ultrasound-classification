@@ -1,7 +1,7 @@
 # =============================================================
 # STEP 1 — BUSI data audit + near-duplicate detection + leak-free split
-# Kaggle: Add Data -> "breast-ultrasound-images-dataset" (aryashah2k)
-# Internet ON karein, phir pehle cell mein:  !pip install -q imagehash
+# Run from repo root:  python scripts/01_data_audit_split.py
+# Paths auto-detected via src.utils.get_paths() (Kaggle / local / SageMaker)
 # =============================================================
 import os, glob, hashlib, itertools
 import numpy as np
@@ -10,8 +10,15 @@ from PIL import Image
 import imagehash
 from sklearn.model_selection import StratifiedGroupKFold
 
-ROOT = "/kaggle/input/breast-ultrasound-images-dataset/Dataset_BUSI_with_GT"
-OUT = "/kaggle/working"
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from src.utils import get_paths, seed_everything
+
+PATHS = get_paths()
+ROOT = str(PATHS["data_root"])
+OUT = str(PATHS["out_dir"])
+seed_everything(42)
 CLASSES = ["benign", "malignant", "normal"]
 PHASH_THRESH = 4   # Hamming distance <= 4  => near-duplicate (visually verify karein)
 SEED = 42
