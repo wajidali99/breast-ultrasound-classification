@@ -1,0 +1,13 @@
+torch>=2.1
+torchvision>=0.16
+timm>=0.9
+numpy
+pandas
+scikit-learn>=1.1
+matplotlib
+Pillow
+imagehash
+pyyaml
+tqdm
+albumentations>=1.3
+grad-cam>=1.4

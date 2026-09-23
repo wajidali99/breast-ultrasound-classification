@@ -1,0 +1,22 @@
+# Base config — har experiment isko override karega
+seed: 42
+task: binary            # binary (benign vs malignant) | multiclass (3-class)
+
+data:
+  splits_csv: busi_splits.csv
+  img_size: 224
+  num_workers: 2
+
+model:
+  arch: resnet50        # timm model name
+  pretrained: true
+  dropout: 0.2
+
+train:
+  folds: [0, 1, 2, 3, 4]
+  epochs: 30
+  batch_size: 32
+  lr: 3.0e-4
+  weight_decay: 1.0e-4
+  early_stopping_patience: 7
+  class_weights: true
