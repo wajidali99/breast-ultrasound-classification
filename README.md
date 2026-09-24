@@ -37,7 +37,7 @@ Before training anything, every BUSI image was fingerprinted with a perceptual h
 
 ![Same scan, conflicting labels](results/figures/busi_cross_label_duplicates.png)
 
-**What this means.** About 20% of BUSI images have at least one near-identical copy. If images are split randomly, copies of the same scan can land in both the training and test sets, which inflates reported performance. Ten near-identical pairs even carry different labels (e.g. the same scan labelled once as benign and once as malignant).
+**What this means.** About 35% of BUSI images (277 of 780) have at least one near-identical copy, and about 20% (153 images) are redundant copies of another image. If images are split randomly, copies of the same scan can land in both the training and test sets, which inflates reported performance. Ten near-identical pairs even carry different labels (e.g. the same scan labelled once as benign and once as malignant).
 
 **How this project handles it.**
 - Near-duplicates are merged into groups, and splits are made at the group level (`StratifiedGroupKFold`), so copies never cross the train/test boundary.
