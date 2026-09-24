@@ -3,7 +3,7 @@
 # Run from repo root:  python scripts/01_data_audit_split.py
 # Paths auto-detected via src.utils.get_paths() (Kaggle / local / SageMaker)
 # =============================================================
-import os, glob, hashlib, itertools
+import os, glob, hashlib, itertools, json
 import numpy as np
 import pandas as pd
 from PIL import Image
@@ -74,22 +74,60 @@ print("Cross-label near-dup pairs (!!):", (dups.label_a != dups.label_b).sum())
 print("Unique groups:", df["group"].nunique(), "of", len(df), "images")
 dups.to_csv(f"{OUT}/busi_near_duplicates.csv", index=False)
 
-# ---------- 3) Group-aware stratified split: ~1/6 test + 5 CV folds ----------
-sgkf = StratifiedGroupKFold(n_splits=6, shuffle=True, random_state=SEED)
-test_idx = next(sgkf.split(df, df["label"], df["group"]))[1]
-df["split"] = "trainval"
-df.loc[test_idx, "split"] = "test"
+# ---------- 3) Conflicting-label groups (same image, different labels) ----------
+# Agar ek group mein 1 se zyada label hain, to us image ka sahi label maloom nahi.
+# Aise poore group ko experiments se nikaal dete hain (DROP_CONFLICTING = False se ablation).
+DROP_CONFLICTING = True
+df["conflict"] = df.groupby("group")["label"].transform("nunique") > 1
+conf = df[df["conflict"]].sort_values(["group", "label", "fname"])
+print(f"\nConflicting-label groups: {conf['group'].nunique()}  ({len(conf)} images)")
+if len(conf):
+    print(conf[["group", "fname", "label"]].to_string(index=False))
+conf[["group", "fname", "label", "path"]].to_csv(f"{OUT}/busi_conflicting_labels.csv", index=False)
 
+# ---------- 4) Group-aware stratified split: ~1/6 test + 5 CV folds ----------
+df["split"] = "excluded"
 df["fold"] = -1
+use = df[~df["conflict"]] if DROP_CONFLICTING else df
+
+sgkf = StratifiedGroupKFold(n_splits=6, shuffle=True, random_state=SEED)
+test_pos = next(sgkf.split(use, use["label"], use["group"]))[1]
+df.loc[use.index, "split"] = "trainval"
+df.loc[use.index[test_pos], "split"] = "test"
+
 tv = df[df["split"] == "trainval"]
 cv = StratifiedGroupKFold(n_splits=5, shuffle=True, random_state=SEED)
 for k, (_, va) in enumerate(cv.split(tv, tv["label"], tv["group"])):
     df.loc[tv.index[va], "fold"] = k
 
-# Leakage sanity check: koi group test aur trainval dono mein na ho
-assert set(df[df.split == "test"].group).isdisjoint(set(df[df.split != "test"].group))
+# ---------- 5) Sanity checks ----------
+test_g = set(df.loc[df.split == "test", "group"])
+tv_g = set(df.loc[df.split == "trainval", "group"])
+assert test_g.isdisjoint(tv_g), "Leakage: group test aur trainval dono mein!"
+assert (df.groupby("group")["fold"].nunique() == 1).all(), "Leakage: group 2 folds mein bata!"
+assert (df.loc[df.split == "trainval", "fold"] >= 0).all(), "Kuch trainval images ko fold nahi mila"
+if DROP_CONFLICTING:
+    assert not df.loc[df.split != "excluded", "conflict"].any(), "Conflicting image split mein reh gayi!"
 
 print("\n", pd.crosstab(df["split"], df["label"]))
-print("\n", pd.crosstab(df["fold"], df["label"]))
+print("\n", pd.crosstab(df.loc[df.split == "trainval", "fold"], df.loc[df.split == "trainval", "label"]))
+
+# ---------- 6) Save ----------
 df.to_csv(f"{OUT}/busi_splits.csv", index=False)
-print("\nSaved: busi_splits.csv, busi_near_duplicates.csv")
+summary = {
+    "total_images": int(len(df)),
+    "class_counts": df["label"].value_counts().to_dict(),
+    "multi_lesion_images": int((df["n_masks"] > 1).sum()),
+    "exact_duplicates_md5": int(df["md5"].duplicated().sum()),
+    "phash_threshold": PHASH_THRESH,
+    "near_duplicate_pairs": int(len(dups)),
+    "cross_label_pairs": int((dups.label_a != dups.label_b).sum()),
+    "unique_groups": int(df["group"].nunique()),
+    "group_size_counts": {int(k): int(v) for k, v in df.groupby("group").size().value_counts().sort_index().items()},
+    "conflicting_groups": int(conf["group"].nunique()),
+    "conflicting_images_excluded": int(len(conf)) if DROP_CONFLICTING else 0,
+    "split_counts": {s: df.loc[df.split == s, "label"].value_counts().to_dict() for s in ["trainval", "test", "excluded"]},
+}
+with open(f"{OUT}/busi_audit_summary.json", "w") as f:
+    json.dump(summary, f, indent=2)
+print("\nSaved: busi_splits.csv, busi_near_duplicates.csv, busi_conflicting_labels.csv, busi_audit_summary.json")
