@@ -6,7 +6,7 @@ Leakage-aware deep learning pipeline for benign vs malignant classification of b
 
 ## Status
 - [x] Step 0 — Project setup
-- [ ] Step 1 — Data audit & leak-free split
+- [x] Step 1 — Data audit & leak-free split
 - [ ] Step 2 — Dataset & preprocessing
 - [ ] Step 3 — Baseline CNN
 - [ ] Step 4 — 5-fold CV & architecture comparison
@@ -20,6 +20,31 @@ Leakage-aware deep learning pipeline for benign vs malignant classification of b
 
 ## Dataset
 BUSI — Breast Ultrasound Images Dataset (Al-Dhabyani et al., *Data in Brief*, 2020).
+
+## Data audit findings (Step 1)
+
+Before training anything, every BUSI image was fingerprinted with a perceptual hash (pHash, Hamming distance ≤ 4) to find exact and near-duplicate images.
+
+| Finding | Count |
+|---|---|
+| Total images (benign / malignant / normal) | 780 (437 / 210 / 133) |
+| Images with multiple lesion masks | 17 |
+| Exact duplicates (MD5) | 1 |
+| Near-duplicate pairs | 186 |
+| Unique image groups after merging near-duplicates | 627 |
+| Near-duplicate pairs with **conflicting labels** | 10 |
+| Conflicting-label groups excluded | 8 groups, 18 images (10 benign, 6 malignant, 2 normal) |
+
+![Same scan, conflicting labels](results/figures/busi_cross_label_duplicates.png)
+
+**What this means.** About 20% of BUSI images have at least one near-identical copy. If images are split randomly, copies of the same scan can land in both the training and test sets, which inflates reported performance. Ten near-identical pairs even carry different labels (e.g. the same scan labelled once as benign and once as malignant).
+
+**How this project handles it.**
+- Near-duplicates are merged into groups, and splits are made at the group level (`StratifiedGroupKFold`), so copies never cross the train/test boundary.
+- Groups with conflicting labels are excluded from all experiments, since their true label is unknown (`DROP_CONFLICTING = True`; setting it to `False` enables an ablation).
+- Assertions in the split script stop the pipeline if any leakage is detected.
+
+**Final split (762 images):** held-out test set of 122 images (70 / 35 / 17) and 640 images for 5-fold cross-validation.
 
 ## Repository structure
 ```
