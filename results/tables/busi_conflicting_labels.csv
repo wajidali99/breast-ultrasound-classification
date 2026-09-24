@@ -1,0 +1,19 @@
+group,fname,label,path
+488,benign (433).png,benign,/kaggle/input/datasets/aryashah2k/breast-ultrasound-images-dataset/Dataset_BUSI_with_GT/benign/benign (433).png
+488,malignant (145).png,malignant,/kaggle/input/datasets/aryashah2k/breast-ultrasound-images-dataset/Dataset_BUSI_with_GT/malignant/malignant (145).png
+594,benign (131).png,benign,/kaggle/input/datasets/aryashah2k/breast-ultrasound-images-dataset/Dataset_BUSI_with_GT/benign/benign (131).png
+594,benign (42).png,benign,/kaggle/input/datasets/aryashah2k/breast-ultrasound-images-dataset/Dataset_BUSI_with_GT/benign/benign (42).png
+594,malignant (51).png,malignant,/kaggle/input/datasets/aryashah2k/breast-ultrasound-images-dataset/Dataset_BUSI_with_GT/malignant/malignant (51).png
+595,benign (164).png,benign,/kaggle/input/datasets/aryashah2k/breast-ultrasound-images-dataset/Dataset_BUSI_with_GT/benign/benign (164).png
+595,benign (85).png,benign,/kaggle/input/datasets/aryashah2k/breast-ultrasound-images-dataset/Dataset_BUSI_with_GT/benign/benign (85).png
+595,malignant (52).png,malignant,/kaggle/input/datasets/aryashah2k/breast-ultrasound-images-dataset/Dataset_BUSI_with_GT/malignant/malignant (52).png
+622,benign (333).png,benign,/kaggle/input/datasets/aryashah2k/breast-ultrasound-images-dataset/Dataset_BUSI_with_GT/benign/benign (333).png
+622,malignant (77).png,malignant,/kaggle/input/datasets/aryashah2k/breast-ultrasound-images-dataset/Dataset_BUSI_with_GT/malignant/malignant (77).png
+640,benign (399).png,benign,/kaggle/input/datasets/aryashah2k/breast-ultrasound-images-dataset/Dataset_BUSI_with_GT/benign/benign (399).png
+640,malignant (93).png,malignant,/kaggle/input/datasets/aryashah2k/breast-ultrasound-images-dataset/Dataset_BUSI_with_GT/malignant/malignant (93).png
+641,benign (406).png,benign,/kaggle/input/datasets/aryashah2k/breast-ultrasound-images-dataset/Dataset_BUSI_with_GT/benign/benign (406).png
+641,malignant (94).png,malignant,/kaggle/input/datasets/aryashah2k/breast-ultrasound-images-dataset/Dataset_BUSI_with_GT/malignant/malignant (94).png
+647,benign (269).png,benign,/kaggle/input/datasets/aryashah2k/breast-ultrasound-images-dataset/Dataset_BUSI_with_GT/benign/benign (269).png
+647,normal (1).png,normal,/kaggle/input/datasets/aryashah2k/breast-ultrasound-images-dataset/Dataset_BUSI_with_GT/normal/normal (1).png
+708,benign (437).png,benign,/kaggle/input/datasets/aryashah2k/breast-ultrasound-images-dataset/Dataset_BUSI_with_GT/benign/benign (437).png
+708,normal (34).png,normal,/kaggle/input/datasets/aryashah2k/breast-ultrasound-images-dataset/Dataset_BUSI_with_GT/normal/normal (34).png

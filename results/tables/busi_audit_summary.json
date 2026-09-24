@@ -1,0 +1,39 @@
+{
+  "total_images": 780,
+  "class_counts": {
+    "benign": 437,
+    "malignant": 210,
+    "normal": 133
+  },
+  "multi_lesion_images": 17,
+  "exact_duplicates_md5": 1,
+  "phash_threshold": 4,
+  "near_duplicate_pairs": 186,
+  "cross_label_pairs": 10,
+  "unique_groups": 627,
+  "group_size_counts": {
+    "1": 503,
+    "2": 100,
+    "3": 19,
+    "4": 5
+  },
+  "conflicting_groups": 8,
+  "conflicting_images_excluded": 18,
+  "split_counts": {
+    "trainval": {
+      "benign": 357,
+      "malignant": 169,
+      "normal": 114
+    },
+    "test": {
+      "benign": 70,
+      "malignant": 35,
+      "normal": 17
+    },
+    "excluded": {
+      "benign": 10,
+      "malignant": 6,
+      "normal": 2
+    }
+  }
+}
