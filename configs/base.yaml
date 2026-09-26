@@ -6,6 +6,8 @@ data:
   splits_csv: busi_splits.csv
   img_size: 224
   num_workers: 2
+  augment: true                    # Step 5 ablation switch
+  add_conflicting_to_train: false  # Step 5 ablation switch
 
 model:
   arch: resnet50        # timm model name
