@@ -8,7 +8,7 @@ Leakage-aware deep learning pipeline for benign vs malignant classification of b
 - [x] Step 0 — Project setup
 - [x] Step 1 — Data audit & leak-free split
 - [x] Step 2 — Dataset & preprocessing
-- [ ] Step 3 — Baseline CNN
+- [x] Step 3 — Baseline CNN
 - [ ] Step 4 — 5-fold CV & architecture comparison
 - [ ] Step 5 — Ablations
 - [ ] Step 6 — Held-out test evaluation
@@ -60,6 +60,23 @@ Before training anything, every BUSI image was fingerprinted with a perceptual h
 | Each CV fold (train / val) | ~285 / ~71 | ~135 / ~34 | ~420 / ~105 |
 
 ![Augmented training batch](results/figures/busi_augmented_batch.png)
+
+## Baseline CNN (Step 3)
+
+ImageNet-pretrained **ResNet50** (23.5M parameters), fine-tuned end-to-end on fold 0 (423 train / 103 val images).
+AdamW (lr 1e-4, weight decay 1e-4), cosine schedule, class-weighted cross-entropy, batch 32, mixed precision, early stopping on validation AUC (patience 7).
+
+| Metric (validation, fold 0, threshold 0.5) | Value |
+|---|---|
+| AUC | 0.929 |
+| Sensitivity (malignant detected) | 0.765 (26 / 34) |
+| Specificity (benign correctly identified) | 0.928 (64 / 69) |
+| Balanced accuracy | 0.846 |
+| Best epoch / epochs run | 17 / 24 |
+
+![ResNet50 fold 0 training curves](results/figures/resnet50_fold0_curves.png)
+
+**Observations.** Train and validation loss fall together until epoch 17; after that validation loss rises while training loss keeps falling (overfitting), and early stopping keeps the epoch-17 weights. Sensitivity at the default 0.5 threshold is the weakest metric (8 of 34 malignant cases missed); threshold selection is addressed in later steps. These are single-fold validation numbers used for model selection, so they are optimistic; unbiased performance will come from 5-fold CV and the locked test set.
 
 ## Repository structure
 ```
