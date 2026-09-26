@@ -1,0 +1,8 @@
+{
+  "arch": "densenet121",
+  "source": "baseline pooled OOF (trainval only)",
+  "default_0.5": 0.5,
+  "youden": 0.6623188,
+  "sens_0.90": 0.22458646,
+  "sens_0.95": 0.10008423
+}
