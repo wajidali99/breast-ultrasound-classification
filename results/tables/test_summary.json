@@ -1,0 +1,35 @@
+{
+  "arch": "densenet121",
+  "threshold": 0.22458645701408386,
+  "n_test": 105,
+  "n_malignant": 35,
+  "primary_single_models_at_threshold": {
+    "auc_mean": 0.9613877551020409,
+    "auc_sd": 0.018849897008811883,
+    "sensitivity_mean": 0.9485714285714286,
+    "sensitivity_sd": 0.031298431857438073,
+    "sensitivity_95ci": [
+      0.9,
+      0.9862183908045977
+    ],
+    "specificity_mean": 0.7542857142857142,
+    "specificity_sd": 0.10757057484009541,
+    "specificity_95ci": [
+      0.6646153846153846,
+      0.8352941176470587
+    ]
+  },
+  "secondary_ensemble": {
+    "auc": 0.9771428571428571,
+    "auc_95ci": [
+      0.9465439551767677,
+      0.996531041144528
+    ],
+    "sens_at_threshold": 1.0,
+    "spec_at_threshold": 0.7571428571428571
+  },
+  "bootstrap": {
+    "n_boot_used": 2000,
+    "unit": "duplicate group"
+  }
+}

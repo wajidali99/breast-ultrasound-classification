@@ -1,0 +1,5 @@
+{
+  "threshold": 0.22458645701408386,
+  "rule": "sensitivity >= 0.9 on OOF",
+  "arch": "densenet121"
+}
