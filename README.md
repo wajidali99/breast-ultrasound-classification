@@ -10,7 +10,7 @@ Leakage-aware deep learning pipeline for benign vs malignant classification of b
 - [x] Step 2 — Dataset & preprocessing
 - [x] Step 3 — Baseline CNN
 - [x] Step 4 — 5-fold CV & architecture comparison
-- [ ] Step 5 — Ablations
+- [x] Step 5 — Ablations
 - [ ] Step 6 — Held-out test evaluation
 - [ ] Step 7 — Explainability (Grad-CAM vs lesion masks)
 - [ ] Step 8 — External validation
@@ -99,6 +99,37 @@ Four ImageNet-pretrained CNNs trained with an identical recipe (same folds, augm
 - Best epochs are selected on the same validation fold, so these numbers are optimistic; unbiased performance comes from the locked test set (Step 6).
 
 **Model carried forward: DenseNet121** (best mean and pooled AUC, lowest variance, 7M parameters).
+
+## Ablations and operating threshold (Step 5)
+
+DenseNet121, 5-fold CV. Each experiment changes exactly one thing relative to the baseline (224px, augmentation, class-weighted loss). ΔAUC is the mean paired difference against the baseline on the same folds. The baseline reproduced the Step 4 DenseNet121 fold results exactly, confirming the pipeline is deterministic.
+
+| Experiment | AUC (mean ± SD) | Pooled OOF AUC | ΔAUC vs baseline | Folds better |
+|---|---|---|---|---|
+| Baseline | 0.933 ± 0.025 | 0.924 | — | — |
+| No augmentation | 0.898 ± 0.064 | 0.900 | −0.035 | 1 / 5 |
+| No class weights | 0.931 ± 0.030 | 0.925 | −0.002 | 3 / 5 |
+| 320×320 input | 0.939 ± 0.028 | 0.933 | +0.006 | 4 / 5 |
+| + 18 conflicting-label images in training | 0.942 ± 0.027 | 0.935 | +0.009 | 3 / 5 |
+
+**Findings.**
+- **Augmentation clearly matters:** removing it lowers AUC by 0.035, more than doubles fold-to-fold variation, and the model overfits sooner (best epoch ~10 vs ~16).
+- **Class weights do not change AUC** (expected: AUC is threshold-free; weighting mainly shifts the operating point).
+- **320px input and adding the conflicting-label images** give small gains (+0.006, +0.009) that are within fold-to-fold variation. Adding the 18 conflicting images to *training* did not hurt, so the case for excluding them rests on evaluation validity (their true label is unknown), not on training performance.
+- Because choosing the best of several variants on the same validation folds inflates results, the **baseline recipe is kept** for the final model; 320px input is noted as a promising option.
+
+**Operating threshold** (chosen on pooled out-of-fold predictions of the baseline — training/validation data only, test set untouched):
+
+| Rule | Threshold | Sensitivity | Specificity | Missed cancers | False alarms |
+|---|---|---|---|---|---|
+| Default | 0.500 | 0.822 (139/169) | 0.891 (318/357) | 30 | 39 |
+| Youden's J | 0.662 | 0.781 (132/169) | 0.941 (336/357) | 37 | 21 |
+| **Sensitivity ≥ 0.90** | **0.225** | **0.905 (153/169)** | **0.737 (263/357)** | **16** | **94** |
+| Sensitivity ≥ 0.95 | 0.100 | 0.953 (161/169) | 0.555 (198/357) | 8 | 159 |
+
+The default 0.5 threshold misses 30 of 169 malignant lesions. The **sensitivity ≥ 0.90 rule (threshold 0.225)** is carried forward to the held-out test evaluation: it halves missed cancers (30 → 16) at the cost of more false alarms, a trade-off that suits a screening-support setting. The ≥ 0.95 rule was rejected because specificity collapses to 0.56.
+
+![Ablations and thresholds](results/figures/ablations_thresholds.png)
 
 ## Repository structure
 ```
