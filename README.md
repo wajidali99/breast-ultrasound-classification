@@ -11,7 +11,7 @@ Leakage-aware deep learning pipeline for benign vs malignant classification of b
 - [x] Step 3 — Baseline CNN
 - [x] Step 4 — 5-fold CV & architecture comparison
 - [x] Step 5 — Ablations
-- [ ] Step 6 — Held-out test evaluation
+- [x] Step 6 — Held-out test evaluation
 - [ ] Step 7 — Explainability (Grad-CAM vs lesion masks)
 - [ ] Step 8 — External validation
 - [ ] Step 9 — Cloud training
@@ -129,7 +129,41 @@ DenseNet121, 5-fold CV. Each experiment changes exactly one thing relative to th
 
 The default 0.5 threshold misses 30 of 169 malignant lesions. The **sensitivity ≥ 0.90 rule (threshold 0.225)** is carried forward to the held-out test evaluation: it halves missed cancers (30 → 16) at the cost of more false alarms, a trade-off that suits a screening-support setting. The ≥ 0.95 rule was rejected because specificity collapses to 0.56.
 
+**Caveats.** (1) The sensitivity/specificity values in this table are measured on the same out-of-fold predictions used to choose the thresholds, and each fold's model was early-stopped on its own validation fold, so they are optimistic; the test set gives the unbiased estimate. (2) The threshold was derived from *single-model* predictions, so on the test set it is applied to each of the five fold models individually; an averaged ensemble has a different probability distribution and is reported for AUC (threshold-free) only as a secondary result. (3) The test set holds only 35 malignant cases, so each missed cancer moves test sensitivity by ~3 points; confidence intervals will be reported.
+
 ![Ablations and thresholds](results/figures/ablations_thresholds.png)
+
+## Locked test set evaluation (Step 6)
+
+The five baseline DenseNet121 fold models were retrained (reproducing the Step 5 validation AUCs exactly), the threshold was frozen from their out-of-fold predictions (sensitivity ≥ 0.90 → **0.225**), and only then was the test set (105 images: 70 benign, 35 malignant) opened — **once**. 95% confidence intervals come from 2,000 bootstrap resamples of whole duplicate groups.
+
+**Primary result — each fold model at the frozen threshold (mean ± SD over 5 models):**
+
+| Metric | Test set | 95% CI |
+|---|---|---|
+| AUC | **0.961 ± 0.019** | — |
+| Sensitivity | **0.949 ± 0.031** | 0.900 – 0.986 |
+| Specificity | **0.754 ± 0.108** | 0.665 – 0.835 |
+| Missed malignant (of 35) | 1.8 on average (range 0–3) | |
+| False alarms (of 70 benign) | 17.2 on average (range 10–29) | |
+
+**Secondary — 5-model ensemble (mean probability):** AUC **0.977** (95% CI 0.947–0.997).
+
+| Model | AUC | Sensitivity | Specificity |
+|---|---|---|---|
+| fold 0 | 0.930 | 1.000 (35/35) | 0.586 (41/70) |
+| fold 1 | 0.969 | 0.943 (33/35) | 0.814 (57/70) |
+| fold 2 | 0.958 | 0.943 (33/35) | 0.714 (50/70) |
+| fold 3 | 0.976 | 0.914 (32/35) | 0.857 (60/70) |
+| fold 4 | 0.975 | 0.943 (33/35) | 0.800 (56/70) |
+
+![Test set results](results/figures/test_results.png)
+
+**Interpretation.**
+- The pre-specified target was met: test sensitivity 0.95 (CI lower bound 0.90) at a threshold chosen without seeing the test set.
+- Specificity varies widely between fold models (0.59–0.86) at the same threshold: a fixed probability cut-off does not transfer equally across independently trained models, so model calibration is a limitation to address (e.g. temperature scaling).
+- Test AUC (0.96) is higher than cross-validation AUC (0.93). This is within the fold-to-fold range seen in CV (0.90–0.96) and the test set is small, so it most likely reflects an easier-than-average split rather than a better model. Duplicate groups were split apart, but near-copies beyond the pHash threshold cannot be fully ruled out; external validation (Step 8) is the stronger test of generalisation.
+- 16 test images were misclassified by at least 3 of 5 models (15 benign false alarms, 1 missed malignant); these are examined with Grad-CAM in Step 7.
 
 ## Repository structure
 ```
