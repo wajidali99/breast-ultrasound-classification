@@ -9,7 +9,7 @@ Leakage-aware deep learning pipeline for benign vs malignant classification of b
 - [x] Step 1 — Data audit & leak-free split
 - [x] Step 2 — Dataset & preprocessing
 - [x] Step 3 — Baseline CNN
-- [ ] Step 4 — 5-fold CV & architecture comparison
+- [x] Step 4 — 5-fold CV & architecture comparison
 - [ ] Step 5 — Ablations
 - [ ] Step 6 — Held-out test evaluation
 - [ ] Step 7 — Explainability (Grad-CAM vs lesion masks)
@@ -77,6 +77,28 @@ AdamW (lr 1e-4, weight decay 1e-4), cosine schedule, class-weighted cross-entrop
 ![ResNet50 fold 0 training curves](results/figures/resnet50_fold0_curves.png)
 
 **Observations.** Train and validation loss fall together until epoch 17; after that validation loss rises while training loss keeps falling (overfitting), and early stopping keeps the epoch-17 weights. Sensitivity at the default 0.5 threshold is the weakest metric (8 of 34 malignant cases missed); threshold selection is addressed in later steps. These are single-fold validation numbers used for model selection, so they are optimistic; unbiased performance will come from 5-fold CV and the locked test set.
+
+## 5-fold cross-validation: architecture comparison (Step 4)
+
+Four ImageNet-pretrained CNNs trained with an identical recipe (same folds, augmentation, optimiser, learning rate, seed). Validation metrics at threshold 0.5, mean ± SD over 5 folds; pooled OOF AUC is computed once over all out-of-fold predictions.
+
+| Model | Params | AUC | Sensitivity | Specificity | Pooled OOF AUC |
+|---|---|---|---|---|---|
+| **DenseNet121** | 7.0M | **0.933 ± 0.025** | 0.825 ± 0.116 | 0.889 ± 0.112 | **0.924** |
+| ConvNeXt-Tiny | 27.8M | 0.928 ± 0.031 | 0.814 ± 0.128 | 0.842 ± 0.055 | 0.903 |
+| EfficientNet-B0 | 4.0M | 0.911 ± 0.039 | 0.833 ± 0.079 | 0.823 ± 0.050 | 0.905 |
+| ResNet50 | 23.5M | 0.905 ± 0.039 | 0.705 ± 0.143 | 0.927 ± 0.031 | 0.902 |
+
+![5-fold CV comparison](results/figures/cv_comparison.png)
+
+**Observations.**
+- DenseNet121 has the highest mean AUC, the highest pooled OOF AUC and the smallest spread, and beats ResNet50 on 4 of 5 folds. The gaps between models (≤0.03 AUC) are, however, smaller than the fold-to-fold variation, so with 5 folds they are suggestive rather than statistically established.
+- Fold difficulty dominates model choice: every model scores lowest on folds 3 and 4 (mean AUC 0.88–0.90 vs 0.95 on fold 2).
+- Sensitivity at the fixed 0.5 threshold is unstable (SD up to 0.14) and ResNet50 is biased towards predicting benign; the operating threshold therefore needs to be chosen explicitly (Step 5).
+- ConvNeXt-Tiny's best epoch was the last or near-last epoch on 2 folds, so it may be under-trained at 30 epochs.
+- Best epochs are selected on the same validation fold, so these numbers are optimistic; unbiased performance comes from the locked test set (Step 6).
+
+**Model carried forward: DenseNet121** (best mean and pooled AUC, lowest variance, 7M parameters).
 
 ## Repository structure
 ```
