@@ -7,7 +7,7 @@ Leakage-aware deep learning pipeline for benign vs malignant classification of b
 ## Status
 - [x] Step 0 — Project setup
 - [x] Step 1 — Data audit & leak-free split
-- [ ] Step 2 — Dataset & preprocessing
+- [x] Step 2 — Dataset & preprocessing
 - [ ] Step 3 — Baseline CNN
 - [ ] Step 4 — 5-fold CV & architecture comparison
 - [ ] Step 5 — Ablations
@@ -37,7 +37,7 @@ Before training anything, every BUSI image was fingerprinted with a perceptual h
 
 ![Same scan, conflicting labels](results/figures/busi_cross_label_duplicates.png)
 
-**What this means.** About 35% of BUSI images (277 of 780) have at least one near-identical copy, and About 35% (153 images) are redundant copies of another image. If images are split randomly, copies of the same scan can land in both the training and test sets, which inflates reported performance. Ten near-identical pairs even carry different labels (e.g. the same scan labelled once as benign and once as malignant).
+**What this means.** About 35% of BUSI images (277 of 780) have at least one near-identical copy, and about 20% (153 images) are redundant copies of another image. If images are split randomly, copies of the same scan can land in both the training and test sets, which inflates reported performance. Ten near-identical pairs even carry different labels (e.g. the same scan labelled once as benign and once as malignant).
 
 **How this project handles it.**
 - Near-duplicates are merged into groups, and splits are made at the group level (`StratifiedGroupKFold`), so copies never cross the train/test boundary.
@@ -45,6 +45,21 @@ Before training anything, every BUSI image was fingerprinted with a perceptual h
 - Assertions in the split script stop the pipeline if any leakage is detected.
 
 **Final split (762 images):** held-out test set of 122 images (70 / 35 / 17) and 640 images for 5-fold cross-validation.
+
+## Data pipeline (Step 2)
+
+- **Task:** benign vs malignant (normal images excluded, since they contain no lesion to classify). A 3-class option is kept for later.
+- **Resizing:** letterbox to 224×224 (aspect ratio kept, padded with black) so lesion shape is not distorted.
+- **Input:** grayscale ultrasound repeated to 3 channels, ImageNet normalisation (for pretrained CNNs).
+- **Augmentation (training only):** horizontal flip, small rotation/shift/scale (±10°, ±5%, 0.9–1.1), brightness/contrast jitter. No vertical flip, since skin is always at the top of an ultrasound image.
+- **Class imbalance:** class-weighted loss (fold 0: benign 0.73, malignant 1.57).
+
+| Split | Benign | Malignant | Total |
+|---|---|---|---|
+| Held-out test (locked) | 70 | 35 | 105 |
+| Each CV fold (train / val) | ~285 / ~71 | ~135 / ~34 | ~420 / ~105 |
+
+![Augmented training batch](results/figures/busi_augmented_batch.png)
 
 ## Repository structure
 ```
