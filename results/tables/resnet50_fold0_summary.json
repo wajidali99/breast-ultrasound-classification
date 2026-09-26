@@ -1,0 +1,15 @@
+{
+  "auc": 0.9290281329923273,
+  "sensitivity": 0.7647058823529411,
+  "specificity": 0.927536231884058,
+  "balanced_acc": 0.8461210571184996,
+  "accuracy": 0.8737864077669902,
+  "tp": 26,
+  "fn": 8,
+  "tn": 64,
+  "fp": 5,
+  "best_epoch": 17,
+  "epochs_run": 24,
+  "val_fold": 0,
+  "arch": "resnet50"
+}
