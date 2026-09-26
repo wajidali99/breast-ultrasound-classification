@@ -46,6 +46,15 @@ def test_split(df: pd.DataFrame, task: str) -> pd.DataFrame:
     return select_rows(df[df["split"] == "test"], task)
 
 
+def conflicting_rows(df: pd.DataFrame, task: str) -> pd.DataFrame:
+    """Step 5 ablation: the excluded conflicting-label images (with their original labels).
+    Their groups were removed from every split, so no copy of them exists in val or test."""
+    cmap = CLASS_MAPS[task]
+    out = df[(df["split"] == "excluded") & (df["label"].isin(cmap))].copy()
+    out["y"] = out["label"].map(cmap).astype(int)
+    return out.reset_index(drop=True)
+
+
 def class_weights(frame: pd.DataFrame, n_classes: int) -> torch.Tensor:
     """Rare class gets a bigger weight: w_c = N / (n_classes * count_c)."""
     counts = np.bincount(frame["y"].to_numpy(), minlength=n_classes).astype(float)
@@ -66,12 +75,12 @@ def letterbox(img: Image.Image, size: int) -> Image.Image:
     return canvas
 
 
-def build_transforms(train: bool):
+def build_transforms(train: bool, augment: bool = True):
     """Ultrasound-safe augmentation: horizontal flip yes, vertical flip NO
     (skin is always at the top of an ultrasound image)."""
     from torchvision import transforms as T
     tail = [T.ToTensor(), T.Normalize(IMAGENET_MEAN, IMAGENET_STD)]
-    if not train:
+    if not (train and augment):
         return T.Compose(tail)
     aug = [
         T.RandomHorizontalFlip(p=0.5),
@@ -110,9 +119,14 @@ class BUSIDataset(Dataset):
 
 
 def make_loaders(df: pd.DataFrame, data_root, task: str, val_fold: int,
-                 img_size: int = 224, batch_size: int = 32, num_workers: int = 2, seed: int = 42):
+                 img_size: int = 224, batch_size: int = 32, num_workers: int = 2, seed: int = 42,
+                 augment: bool = True, add_conflicting_to_train: bool = False):
     train_df, val_df = fold_split(df, task, val_fold)
-    train_ds = BUSIDataset(train_df, data_root, img_size, build_transforms(True))
+    if add_conflicting_to_train:
+        extra = conflicting_rows(df, task)
+        assert set(extra["group"]).isdisjoint(val_df["group"]), "Leakage: conflicting group in val!"
+        train_df = pd.concat([train_df, extra], ignore_index=True)
+    train_ds = BUSIDataset(train_df, data_root, img_size, build_transforms(True, augment))
     val_ds = BUSIDataset(val_df, data_root, img_size, build_transforms(False))
     g = torch.Generator().manual_seed(seed)
     train_dl = DataLoader(train_ds, batch_size=batch_size, shuffle=True, num_workers=num_workers,

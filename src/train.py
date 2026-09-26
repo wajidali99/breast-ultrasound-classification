@@ -44,7 +44,9 @@ def train_fold(cfg: dict, df: pd.DataFrame, data_root, val_fold: int, device, lo
 
     train_dl, val_dl, train_df, val_df = make_loaders(
         df, data_root, task, val_fold, img_size=cfg["data"]["img_size"],
-        batch_size=tc["batch_size"], num_workers=cfg["data"]["num_workers"], seed=cfg["seed"])
+        batch_size=tc["batch_size"], num_workers=cfg["data"]["num_workers"], seed=cfg["seed"],
+        augment=cfg["data"].get("augment", True),
+        add_conflicting_to_train=cfg["data"].get("add_conflicting_to_train", False))
 
     model = build_model(cfg["model"]["arch"], cfg["model"]["pretrained"], n_cls,
                         cfg["model"]["dropout"]).to(device)

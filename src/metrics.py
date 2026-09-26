@@ -1,6 +1,6 @@
 """Step 3 — evaluation metrics for binary benign (0) vs malignant (1)."""
 import numpy as np
-from sklearn.metrics import roc_auc_score, confusion_matrix
+from sklearn.metrics import roc_auc_score, confusion_matrix, roc_curve
 
 
 def binary_metrics(y_true, prob_malignant, threshold: float = 0.5) -> dict:
@@ -22,3 +22,18 @@ def binary_metrics(y_true, prob_malignant, threshold: float = 0.5) -> dict:
         "accuracy": float((tp + tn) / len(y_true)),
         "tp": int(tp), "fn": int(fn), "tn": int(tn), "fp": int(fp),
     }
+
+
+def threshold_for_sensitivity(y_true, prob, target: float = 0.90) -> float:
+    """Highest threshold whose sensitivity is >= target (so specificity is as high as possible)."""
+    fpr, tpr, thr = roc_curve(np.asarray(y_true).astype(int), np.asarray(prob, dtype=float))
+    ok = np.where((tpr >= target) & np.isfinite(thr))[0]
+    assert len(ok), f"No threshold reaches sensitivity {target}"
+    return float(thr[ok[0]])
+
+
+def youden_threshold(y_true, prob) -> float:
+    """Threshold maximising sensitivity + specificity - 1 (Youden's J)."""
+    fpr, tpr, thr = roc_curve(np.asarray(y_true).astype(int), np.asarray(prob, dtype=float))
+    j = np.where(np.isfinite(thr), tpr - fpr, -np.inf)
+    return float(thr[int(np.argmax(j))])
