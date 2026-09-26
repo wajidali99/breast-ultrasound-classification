@@ -16,7 +16,7 @@ train:
   folds: [0, 1, 2, 3, 4]
   epochs: 30
   batch_size: 32
-  lr: 3.0e-4
+  lr: 1.0e-4
   weight_decay: 1.0e-4
   early_stopping_patience: 7
   class_weights: true
