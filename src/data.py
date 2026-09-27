@@ -134,3 +134,10 @@ def make_loaders(df: pd.DataFrame, data_root, task: str, val_fold: int,
     val_dl = DataLoader(val_ds, batch_size=batch_size, shuffle=False, num_workers=num_workers,
                         pin_memory=True)
     return train_dl, val_dl, train_df, val_df
+
+
+class PathDataset(BUSIDataset):
+    """Same preprocessing as BUSIDataset, but images are read from an absolute 'path' column
+    (used for external datasets with a different folder layout)."""
+    def path(self, i: int) -> Path:
+        return Path(self.frame.iloc[i]["path"])
