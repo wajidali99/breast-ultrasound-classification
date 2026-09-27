@@ -35,3 +35,19 @@ def group_bootstrap(y, probs, groups, thr, n_boot=2000, seed=42):
     ci = lambda a: (float(np.percentile(a, 2.5)), float(np.percentile(a, 97.5)))
     return {"ensemble_auc_ci": ci(aucs), "mean_model_sens_ci": ci(sens),
             "mean_model_spec_ci": ci(specs), "n_boot_used": len(aucs)}
+
+
+def paired_auc_diff(y, p_a, p_b, groups, n_boot=2000, seed=42):
+    """Bootstrap (by group) of AUC(p_b) - AUC(p_a) on the same images. Returns point estimate and 95% CI."""
+    y = np.asarray(y).astype(int); p_a = np.asarray(p_a, float); p_b = np.asarray(p_b, float)
+    groups = np.asarray(groups); uniq = np.unique(groups)
+    idx_by = {g: np.where(groups == g)[0] for g in uniq}
+    rng = np.random.default_rng(seed); diffs = []
+    for _ in range(n_boot):
+        idx = np.concatenate([idx_by[g] for g in rng.choice(uniq, size=len(uniq), replace=True)])
+        if y[idx].min() == y[idx].max():
+            continue
+        diffs.append(roc_auc_score(y[idx], p_b[idx]) - roc_auc_score(y[idx], p_a[idx]))
+    point = roc_auc_score(y, p_b) - roc_auc_score(y, p_a)
+    return {"delta_auc": float(point), "ci": (float(np.percentile(diffs, 2.5)), float(np.percentile(diffs, 97.5))),
+            "p_b_better": float(np.mean(np.array(diffs) > 0))}
