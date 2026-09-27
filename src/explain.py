@@ -1,7 +1,8 @@
 """Step 7 — Grad-CAM and lesion-localisation metrics.
 
-Grad-CAM target = the MALIGNANT logit for every image: the heatmap shows which regions
-push the model's malignancy score up, i.e. the score that is compared with the threshold.
+Two Grad-CAM targets are used:
+- malignant logit ("what pushes the score towards malignant") — explains false alarms
+- true-class logit ("what supports the correct answer") — tests whether the model uses the lesion
 """
 from pathlib import Path
 
@@ -75,7 +76,8 @@ class GradCAM:
         self.acts = out
         out.register_hook(lambda g: setattr(self, "grads", g))
 
-    def __call__(self, x, class_idx: int = 1):
+    def __call__(self, x, class_idx=1):
+        """class_idx: an int (same class for every image) or a 1-D tensor with one class per image."""
         import torch
         import torch.nn.functional as F
         self.model.eval()
@@ -83,7 +85,11 @@ class GradCAM:
             x = x.clone().requires_grad_(False)
             self.model.zero_grad(set_to_none=True)
             logits = self.model(x)
-            logits[:, class_idx].sum().backward()
+            if isinstance(class_idx, int):
+                idx = torch.full((len(x),), class_idx, device=logits.device, dtype=torch.long)
+            else:
+                idx = class_idx.to(logits.device).long()
+            logits.gather(1, idx[:, None]).sum().backward()
             w = self.grads.mean(dim=(2, 3), keepdim=True)           # importance of each channel
             cam = F.relu((w * self.acts).sum(1, keepdim=True))       # (B, 1, h, w)
             cam = F.interpolate(cam, size=x.shape[-2:], mode="bilinear", align_corners=False)[:, 0]
