@@ -12,7 +12,7 @@ Leakage-aware deep learning pipeline for benign vs malignant classification of b
 - [x] Step 4 — 5-fold CV & architecture comparison
 - [x] Step 5 — Ablations
 - [x] Step 6 — Held-out test evaluation
-- [ ] Step 7 — Explainability (Grad-CAM vs lesion masks)
+- [x] Step 7 — Explainability (Grad-CAM vs lesion masks)
 - [ ] Step 8 — External validation
 - [ ] Step 9 — Cloud training
 - [ ] Step 10 — Demo deployment
@@ -164,6 +164,37 @@ The five baseline DenseNet121 fold models were retrained (reproducing the Step 5
 - Specificity varies widely between fold models (0.59–0.86) at the same threshold: a fixed probability cut-off does not transfer equally across independently trained models, so model calibration is a limitation to address (e.g. temperature scaling).
 - Test AUC (0.96) is higher than cross-validation AUC (0.93). This is within the fold-to-fold range seen in CV (0.90–0.96) and the test set is small, so it most likely reflects an easier-than-average split rather than a better model. Duplicate groups were split apart, but near-copies beyond the pHash threshold cannot be fully ruled out; external validation (Step 8) is the stronger test of generalisation.
 - 16 test images were misclassified by at least 3 of 5 models (15 benign false alarms, 1 missed malignant); these are examined with Grad-CAM in Step 7.
+
+## Explainability: Grad-CAM vs lesion masks (Step 7)
+
+Grad-CAM heatmaps (last DenseNet block, averaged over the 5 fold models) were computed on the 105 test images and compared with the radiologists' lesion masks. Two targets answer two different questions:
+- **True-class CAM** — which regions support the correct answer? (tests whether the model uses the lesion)
+- **Malignant CAM** — which regions push the score towards malignant? (explains false alarms)
+
+*Pointing hit* = the hottest pixel lies inside the lesion (±7 px); *chance* = hit rate of a random point; *ratio* = share of heatmap energy inside the lesion ÷ lesion's share of the image (1 = chance).
+
+| True-class CAM | n | Pointing hit | Chance | Energy ratio |
+|---|---|---|---|---|
+| All test images | 105 | **0.77** | 0.14 | **2.70** |
+| Benign | 70 | 0.76 | 0.10 | 3.04 |
+| Malignant | 35 | 0.80 | 0.20 | 2.17 |
+| Correctly classified | 88 | 0.82 | 0.14 | 2.74 |
+| Hard cases (≥3 of 5 models wrong) | 17 | 0.53 | 0.13 | 1.91 |
+
+| Malignant CAM on hard cases | n | Pointing hit | Chance | Energy ratio |
+|---|---|---|---|---|
+| Hard cases (≥3 of 5 models wrong) | 17 | 0.12 | 0.13 | 1.01 |
+
+![Grad-CAM on confident correct predictions](results/figures/gradcam_correct.png)
+![Grad-CAM on hard cases](results/figures/gradcam_hard_cases.png)
+
+**Findings.**
+- **The model localises the lesion.** For correct predictions the hottest point falls on the lesion 82% of the time (chance 14%), for both benign and malignant cases, with 2–3× more heatmap energy on the lesion than expected by chance.
+- **False alarms are driven by regions outside the lesion.** On the benign images called malignant, the malignant evidence lands on the lesion no more often than chance (0.12 vs 0.13). Visually, the heat sits either **directly below the lesion** — where posterior acoustic shadowing, a genuine sonographic sign of malignancy, appears — or at **image borders** with no anatomical meaning.
+- **No sign of a text-annotation shortcut** in the inspected cases: burned-in labels (e.g. "RT UOQ", "LT 5") were not highlighted.
+- An earlier version used the malignant CAM for all images; this made benign images look unlocalised (hit rate 0.06) because a benign lesion is evidence *against* malignancy. Switching to true-class CAM resolved this — reported here as a methodological note.
+
+**Limitations.** Grad-CAM is coarse (7×7 feature map upsampled to 224×224) and shows correlation, not causation; the hard-case group is small (17); caliper marks were assessed only visually. The hard-case count is 17 here versus 16 in Step 6 because Grad-CAM runs in full precision while Step 6 used mixed precision, which moved one borderline probability across the 0.225 threshold.
 
 ## Repository structure
 ```
