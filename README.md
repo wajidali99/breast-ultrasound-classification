@@ -13,7 +13,7 @@ Leakage-aware deep learning pipeline for benign vs malignant classification of b
 - [x] Step 5 — Ablations
 - [x] Step 6 — Held-out test evaluation
 - [x] Step 7 — Explainability (Grad-CAM vs lesion masks)
-- [ ] Step 8 — External validation
+- [x] Step 8 — External validation
 - [ ] Step 9 — Cloud training
 - [ ] Step 10 — Demo deployment
 - [ ] Step 11 — Report & slides
@@ -195,6 +195,71 @@ Grad-CAM heatmaps (last DenseNet block, averaged over the 5 fold models) were co
 - An earlier version used the malignant CAM for all images; this made benign images look unlocalised (hit rate 0.06) because a benign lesion is evidence *against* malignancy. Switching to true-class CAM resolved this — reported here as a methodological note.
 
 **Limitations.** Grad-CAM is coarse (7×7 feature map upsampled to 224×224) and shows correlation, not causation; the hard-case group is small (17); caliper marks were assessed only visually. The hard-case count is 17 here versus 16 in Step 6 because Grad-CAM runs in full precision while Step 6 used mixed precision, which moved one borderline probability across the 0.225 threshold.
+
+## External validation on BUS-BRA (Step 8)
+
+The five BUSI-trained DenseNet121 models and the BUSI-frozen threshold (0.225) were applied **unchanged** to **BUS-BRA** (Gómez-Flores et al., *Medical Physics* 2024): 1,875 images from 1,064 patients in Brazil, biopsy-proven, three ultrasound scanners. Nothing was retrained or re-tuned. CIs use a patient-level bootstrap.
+
+| | BUSI internal test (Step 6) | **BUS-BRA external** |
+|---|---|---|
+| Images (benign / malignant) | 105 (70 / 35) | 1,875 (1,268 / 607) |
+| AUC, mean of 5 models | 0.961 ± 0.019 | **0.718 ± 0.022** |
+| Ensemble AUC (95% CI) | 0.977 (0.947–0.997) | **0.750 (0.721–0.776)** |
+| Sensitivity @ 0.225 | 0.949 ± 0.031 | 0.829 ± 0.107 (CI 0.80–0.85) |
+| Specificity @ 0.225 | 0.754 ± 0.108 | 0.420 ± 0.201 (CI 0.40–0.44) |
+
+| Scanner | Images | Malignant | Ensemble AUC |
+|---|---|---|---|
+| GE Logiq 5 | 809 | 243 | 0.725 |
+| GE Logiq 7 | 902 | 285 | 0.772 |
+| Toshiba Aplio 300 | 139 | 68 | 0.789 |
+
+![External validation](results/figures/external_results.png)
+![BUSI vs BUS-BRA examples](results/figures/domain_examples.png)
+
+**Findings.**
+- **Performance drops substantially under domain shift:** AUC falls from 0.96–0.98 on the internal test set to 0.72–0.75 on an independent hospital. This is the most important result of the project: internal test performance on BUSI does not transfer.
+- **The loss is in discrimination, not threshold placement.** A post-hoc threshold tuned *on* BUS-BRA for 90% sensitivity lands at 0.223 — almost identical to the BUSI threshold — yet gives specificity of only 0.34. The model's ranking of benign vs malignant is weaker, so no threshold can recover the internal performance.
+- **The drop is consistent across scanners** (AUC 0.73–0.79), so it is not caused by one device.
+- **Model-to-model instability grows:** at the same threshold, specificity ranges from 0.16 to 0.63 across the five fold models (0.59–0.86 on BUSI).
+
+**Likely contributors** (not individually tested): different image framing — BUS-BRA images are mostly tall, narrow crops while BUSI images are wide, so after letterboxing the tissue occupies a different part of the input; different scanners and acquisition settings; a harder benign class in BUS-BRA (biopsied, BI-RADS 4 lesions that looked suspicious enough to sample); BUSI's single-centre training data (~420 images per fold); and residual optimism in the BUSI test estimate from same-centre similarity between scans.
+
+**Implications.** Single-centre BUSI results — including the ~99% accuracies often reported on this dataset — should not be read as clinical performance. Next steps: lesion-focused training (motivated by Step 7), multi-centre training, and domain adaptation, each evaluated on held-out external data.
+
+## v2: mask-guided training (pre-registered follow-up)
+
+Motivated by Steps 7–8, two variants were specified in [`docs/v2_preregistration.md`](docs/v2_preregistration.md) and committed **before** any v2 training:
+- **v2a** — DenseNet121 + auxiliary lesion-mask head (1×1 conv on the 7×7 feature map, BCE loss, λ = 0.5)
+- **v2b** — v2a + aspect-ratio crop augmentation (random 50–100% width, 80–100% height, lesion always kept)
+
+Selection used BUSI cross-validation only; each variant's threshold was frozen from its own OOF predictions (sensitivity ≥ 0.90); BUSI test and BUS-BRA were each evaluated once.
+
+| | v1 (baseline) | v2a | **v2b (selected)** |
+|---|---|---|---|
+| BUSI CV pooled OOF AUC | 0.924 | 0.923 | **0.940** |
+| BUSI test ensemble AUC | 0.977 | 0.969 | 0.970 |
+| **BUS-BRA ensemble AUC (95% CI)** | 0.750 (0.721–0.776) | 0.751 (0.722–0.779) | **0.776 (0.749–0.804)** |
+| BUS-BRA single-model AUC | 0.718 ± 0.022 | 0.721 ± 0.025 | 0.748 ± 0.014 |
+| BUS-BRA sensitivity / specificity @ own threshold | 0.83 / 0.42 | 0.82 / 0.39 | 0.70 / 0.65 |
+| BUS-BRA specificity range across 5 models | 0.16–0.63 | 0.13–0.68 | 0.42–0.82 |
+
+**Paired ΔAUC vs v1 (ensemble, bootstrap 95% CI):**
+
+| Comparison | BUS-BRA (by patient) | BUSI test (by duplicate group) |
+|---|---|---|
+| v2a − v1 | +0.002 (−0.016 to +0.018) | −0.009 (−0.032 to +0.009) |
+| **v2b − v1** | **+0.027 (+0.010 to +0.044)** ← primary | −0.007 (−0.027 to +0.009) |
+
+![v1 vs v2](results/figures/v1_vs_v2.png)
+
+**Findings.**
+- The pre-registered primary test is met: **v2b improves external AUC by 0.027** (CI excludes 0) without hurting internal test performance, and the five fold models become more consistent (single-model AUC SD 0.014 vs 0.022; specificity range 0.42–0.82 vs 0.16–0.63).
+- **The mask loss alone (v2a) did not help** on either dataset. The gain appears only when aspect-ratio crop augmentation is added, so it is most likely driven by robustness to image framing. An aspect-only variant was not pre-registered, so the two effects cannot be fully separated here.
+- **The improvement is modest.** External AUC (0.78) remains far below internal AUC (0.97): v2 narrows the domain gap only slightly.
+- **The sensitivity target does not transfer.** At its BUSI-derived threshold, v2b reaches 0.70 sensitivity on BUS-BRA (target 0.90), trading sensitivity for specificity compared with v1. Any real deployment would need site-specific calibration.
+
+**Disclosure.** The aspect-crop idea was inspired by seeing BUS-BRA's image framing in Step 8. BUS-BRA was not used to tune any setting and was evaluated once, but because the design was informed by this domain, the gain may be smaller on other unseen hospitals. v2b fold 3 reached its best epoch at 29/30, so the 30-epoch budget may be slightly short.
 
 ## Repository structure
 ```
