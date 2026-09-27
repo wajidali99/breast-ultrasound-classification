@@ -1,0 +1,146 @@
+{
+  "lambda": 0.5,
+  "pooled_oof_auc": {
+    "v2a": 0.9227205675169476,
+    "v2b": 0.9400825418924966,
+    "v1": 0.9235493013773557
+  },
+  "thresholds": {
+    "v1": 0.22458645701408386,
+    "v2a": 0.22312305867671967,
+    "v2b": 0.3350244164466858
+  },
+  "selected": "v2b",
+  "results": [
+    {
+      "model": "v1",
+      "dataset": "BUSI test",
+      "threshold": 0.22458645701408386,
+      "auc_single_mean": 0.9613877551020409,
+      "auc_single_sd": 0.018849897008811883,
+      "ensemble_auc": 0.9771428571428571,
+      "ensemble_auc_lo": 0.9465439551767677,
+      "ensemble_auc_hi": 0.996531041144528,
+      "sens_mean": 0.9485714285714286,
+      "spec_mean": 0.7542857142857142,
+      "spec_min": 0.5857142857142857,
+      "spec_max": 0.8571428571428571
+    },
+    {
+      "model": "v1",
+      "dataset": "BUS-BRA",
+      "threshold": 0.22458645701408386,
+      "auc_single_mean": 0.7183637010898091,
+      "auc_single_sd": 0.022293372223640036,
+      "ensemble_auc": 0.7495907368814929,
+      "ensemble_auc_lo": 0.7207365757535955,
+      "ensemble_auc_hi": 0.7757232258411513,
+      "sens_mean": 0.8289950576606261,
+      "spec_mean": 0.42034700315457413,
+      "spec_min": 0.15694006309148265,
+      "spec_max": 0.6285488958990536
+    },
+    {
+      "model": "v2a",
+      "dataset": "BUSI test",
+      "threshold": 0.22312305867671967,
+      "auc_single_mean": 0.9584489795918367,
+      "auc_single_sd": 0.005101224424479314,
+      "ensemble_auc": 0.9685714285714285,
+      "ensemble_auc_lo": 0.9240426019659624,
+      "ensemble_auc_hi": 0.99770340984798,
+      "sens_mean": 0.96,
+      "spec_mean": 0.7171428571428571,
+      "spec_min": 0.5285714285714286,
+      "spec_max": 0.8857142857142857
+    },
+    {
+      "model": "v2a",
+      "dataset": "BUS-BRA",
+      "threshold": 0.22312305867671967,
+      "auc_single_mean": 0.7211913844266938,
+      "auc_single_sd": 0.02490134610109075,
+      "ensemble_auc": 0.7511784179317011,
+      "ensemble_auc_lo": 0.721719735356675,
+      "ensemble_auc_hi": 0.7793042741251147,
+      "sens_mean": 0.8204283360790775,
+      "spec_mean": 0.39037854889589907,
+      "spec_min": 0.13170347003154576,
+      "spec_max": 0.6766561514195584
+    },
+    {
+      "model": "v2b",
+      "dataset": "BUSI test",
+      "threshold": 0.3350244164466858,
+      "auc_single_mean": 0.9634285714285713,
+      "auc_single_sd": 0.010634200208641347,
+      "ensemble_auc": 0.969795918367347,
+      "ensemble_auc_lo": 0.930343589776999,
+      "ensemble_auc_hi": 0.9950250301288588,
+      "sens_mean": 0.9314285714285715,
+      "spec_mean": 0.7885714285714285,
+      "spec_min": 0.7142857142857143,
+      "spec_max": 0.8714285714285714
+    },
+    {
+      "model": "v2b",
+      "dataset": "BUS-BRA",
+      "threshold": 0.3350244164466858,
+      "auc_single_mean": 0.7478944386988811,
+      "auc_single_sd": 0.014126987330997197,
+      "ensemble_auc": 0.7764734771514248,
+      "ensemble_auc_lo": 0.748875324789264,
+      "ensemble_auc_hi": 0.8036037934960495,
+      "sens_mean": 0.6991762767710049,
+      "spec_mean": 0.6454258675078864,
+      "spec_min": 0.41719242902208203,
+      "spec_max": 0.8186119873817035
+    }
+  ],
+  "paired": [
+    {
+      "dataset": "BUS-BRA",
+      "comparison": "v2a - v1",
+      "delta_auc": 0.001587681050208234,
+      "ci": [
+        -0.015615905616693815,
+        0.017771469119696133
+      ],
+      "p_b_better": 0.556,
+      "primary": false
+    },
+    {
+      "dataset": "BUS-BRA",
+      "comparison": "v2b - v1",
+      "delta_auc": 0.02688274026993187,
+      "ci": [
+        0.009602583764327996,
+        0.04385956626670531
+      ],
+      "p_b_better": 0.9995,
+      "primary": true
+    },
+    {
+      "dataset": "BUSI test",
+      "comparison": "v2a - v1",
+      "delta_auc": -0.008571428571428563,
+      "ci": [
+        -0.032345247282783415,
+        0.008870266510151872
+      ],
+      "p_b_better": 0.174,
+      "primary": false
+    },
+    {
+      "dataset": "BUSI test",
+      "comparison": "v2b - v1",
+      "delta_auc": -0.00734693877551007,
+      "ci": [
+        -0.027001803174755895,
+        0.009234567901234579
+      ],
+      "p_b_better": 0.199,
+      "primary": false
+    }
+  ]
+}
