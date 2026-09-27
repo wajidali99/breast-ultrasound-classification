@@ -1,0 +1,89 @@
+{
+  "threshold": 0.22458645701408386,
+  "tolerance_px": 7,
+  "cams": "mean of 5 fold models",
+  "true": {
+    "all": {
+      "n": 105,
+      "pointing_hit_rate": 0.7714285714285715,
+      "chance_hit_rate": 0.13509578596598937,
+      "median_energy_in_lesion": 0.17912094295024872,
+      "median_lesion_area_frac": 0.06376488095238095,
+      "median_energy_ratio": 2.6957165763471753
+    },
+    "benign": {
+      "n": 70,
+      "pointing_hit_rate": 0.7571428571428571,
+      "chance_hit_rate": 0.10024239881362064,
+      "median_energy_in_lesion": 0.13575180619955063,
+      "median_lesion_area_frac": 0.04560144679448164,
+      "median_energy_ratio": 3.037233431262374
+    },
+    "malignant": {
+      "n": 35,
+      "pointing_hit_rate": 0.8,
+      "chance_hit_rate": 0.20480256027072682,
+      "median_energy_in_lesion": 0.2907644510269165,
+      "median_lesion_area_frac": 0.1195640756302521,
+      "median_energy_ratio": 2.172672080009312
+    },
+    "correct (<3 models wrong)": {
+      "n": 88,
+      "pointing_hit_rate": 0.8181818181818182,
+      "chance_hit_rate": 0.136787597766656,
+      "median_energy_in_lesion": 0.2068559154868126,
+      "median_lesion_area_frac": 0.06508822278911564,
+      "median_energy_ratio": 2.7411212284468234
+    },
+    "hard (\u22653 models wrong)": {
+      "n": 17,
+      "pointing_hit_rate": 0.5294117647058824,
+      "chance_hit_rate": 0.12633817193900915,
+      "median_energy_in_lesion": 0.09866984933614731,
+      "median_lesion_area_frac": 0.04557778608825729,
+      "median_energy_ratio": 1.9067537817741287
+    }
+  },
+  "malig": {
+    "all": {
+      "n": 105,
+      "pointing_hit_rate": 0.3047619047619048,
+      "chance_hit_rate": 0.13509578596598937,
+      "median_energy_in_lesion": 0.014575332403182983,
+      "median_lesion_area_frac": 0.06376488095238095,
+      "median_energy_ratio": 0.2909989240905521
+    },
+    "benign": {
+      "n": 70,
+      "pointing_hit_rate": 0.05714285714285714,
+      "chance_hit_rate": 0.10024239881362064,
+      "median_energy_in_lesion": 0.0007074609166011214,
+      "median_lesion_area_frac": 0.04560144679448164,
+      "median_energy_ratio": 0.03463950207096633
+    },
+    "malignant": {
+      "n": 35,
+      "pointing_hit_rate": 0.8,
+      "chance_hit_rate": 0.20480256027072682,
+      "median_energy_in_lesion": 0.2907644510269165,
+      "median_lesion_area_frac": 0.1195640756302521,
+      "median_energy_ratio": 2.172672080009312
+    },
+    "correct (<3 models wrong)": {
+      "n": 88,
+      "pointing_hit_rate": 0.3409090909090909,
+      "chance_hit_rate": 0.136787597766656,
+      "median_energy_in_lesion": 0.010266366880387068,
+      "median_lesion_area_frac": 0.06508822278911564,
+      "median_energy_ratio": 0.1494078797060051
+    },
+    "hard (\u22653 models wrong)": {
+      "n": 17,
+      "pointing_hit_rate": 0.11764705882352941,
+      "chance_hit_rate": 0.12633817193900915,
+      "median_energy_in_lesion": 0.03169763460755348,
+      "median_lesion_area_frac": 0.04557778608825729,
+      "median_energy_ratio": 1.0095078985204375
+    }
+  }
+}
