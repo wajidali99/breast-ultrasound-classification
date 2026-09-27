@@ -63,13 +63,13 @@ def class_weights(frame: pd.DataFrame, n_classes: int) -> torch.Tensor:
 
 
 # ---------------------------------------------------------------- preprocessing
-def letterbox(img: Image.Image, size: int) -> Image.Image:
+def letterbox(img: Image.Image, size: int, resample=Image.BILINEAR) -> Image.Image:
     """Resize keeping the aspect ratio, then pad with black to size x size.
     (Stretching would distort lesion shape, which matters for benign vs malignant.)"""
     w, h = img.size
     s = size / max(w, h)
     nw, nh = max(1, round(w * s)), max(1, round(h * s))
-    img = img.resize((nw, nh), Image.BILINEAR)
+    img = img.resize((nw, nh), resample)
     canvas = Image.new(img.mode, (size, size), 0)
     canvas.paste(img, ((size - nw) // 2, (size - nh) // 2))
     return canvas
