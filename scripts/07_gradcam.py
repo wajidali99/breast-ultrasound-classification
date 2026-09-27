@@ -1,7 +1,9 @@
 # =============================================================
 # STEP 7 — Explainability: where does the model look?
-# Grad-CAM (malignant logit, averaged over the 5 fold models) on the TEST set,
-# compared with the radiologists' lesion masks.
+# Grad-CAM on the TEST set (averaged over the 5 fold models), compared with the
+# radiologists' lesion masks. Two targets:
+#   true-class CAM  -> "does the model use the lesion to reach the correct answer?"
+#   malignant CAM   -> "what pushed the score towards malignant?" (explains false alarms)
 # Run:  python scripts/07_gradcam.py
 # Needs Step 6 checkpoints; if the session restarted they are rebuilt automatically (~6 min).
 # =============================================================
@@ -39,24 +41,28 @@ print(f"Device: {device} | {len(ckpts)} fold models | frozen threshold {thr:.3f}
 test_df = test_split(df, cfg["task"])
 ds = BUSIDataset(test_df, P["data_root"], SIZE, build_transforms(False))
 dl = DataLoader(ds, batch_size=16, shuffle=False, num_workers=0)
-cam_sum = np.zeros((len(ds), SIZE, SIZE), dtype=np.float32)
+cam_sum = {"true": np.zeros((len(ds), SIZE, SIZE), np.float32), "malig": np.zeros((len(ds), SIZE, SIZE), np.float32)}
 probs = np.zeros((len(ckpts), len(ds)), dtype=np.float32)
 for k, ck in enumerate(ckpts):
     model = build_model(ARCH, pretrained=False, n_classes=2, dropout=cfg["model"]["dropout"]).to(device)
     model.load_state_dict(torch.load(ck, map_location=device))
     gc_ = GradCAM(model, target_layer(model, ARCH))
     i0 = 0
-    for x, _ in dl:
-        cam, p = gc_(x.to(device), class_idx=1)
-        cam_sum[i0:i0 + len(x)] += cam
+    for x, yb in dl:
+        cam_m, p = gc_(x.to(device), class_idx=1)
+        cam_t, _ = gc_(x.to(device), class_idx=yb)
+        cam_sum["malig"][i0:i0 + len(x)] += cam_m
+        cam_sum["true"][i0:i0 + len(x)] += cam_t
         probs[k, i0:i0 + len(x)] = p
         i0 += len(x)
     gc_.remove(); del model; gc.collect()
     if torch.cuda.is_available():
         torch.cuda.empty_cache()
     print(f"model {k}: Grad-CAM done")
-cams = cam_sum / cam_sum.reshape(len(ds), -1).max(1).clip(1e-8)[:, None, None]
-assert np.isfinite(cams).all() and cams.max() <= 1.0 + 1e-6
+norm = lambda c: c / c.reshape(len(c), -1).max(1).clip(1e-8)[:, None, None]
+CAMS = {k: norm(v) for k, v in cam_sum.items()}
+for c in CAMS.values():
+    assert np.isfinite(c).all() and c.max() <= 1.0 + 1e-6
 
 # ---------- 2) Compare with lesion masks ----------
 y = test_df["y"].to_numpy()
@@ -64,38 +70,45 @@ rows = []
 for i, r in test_df.iterrows():
     les = load_lesion_mask(P["data_root"], r["label"], r["fname"], SIZE)
     con = content_mask(P["data_root"], r["label"], r["fname"], SIZE)
-    m = localisation_metrics(cams[i], les, con, tolerance_px=7)
     tol_area = float((binary_dilation(les, iterations=7) & con).sum() / con.sum())
     wrong = int(((probs[:, i] >= thr).astype(int) != y[i]).sum())
-    rows.append({"fname": r["fname"], "label": r["label"], "y": int(y[i]),
-                 "prob_ensemble": float(probs[:, i].mean()), "n_models_wrong": wrong,
-                 "hard_case": wrong >= 3, "chance_hit": tol_area, **m})
+    row = {"fname": r["fname"], "label": r["label"], "y": int(y[i]),
+           "prob_ensemble": float(probs[:, i].mean()), "n_models_wrong": wrong,
+           "hard_case": wrong >= 3, "chance_hit": tol_area}
+    for tgt, c in CAMS.items():
+        m = localisation_metrics(c[i], les, con, tolerance_px=7)
+        row.update({f"{tgt}_{k}": v for k, v in m.items()})
+    rows.append(row)
 res = pd.DataFrame(rows)
 res.to_csv(out / "gradcam_localisation.csv", index=False)
-np.save(out / "test_cams.npy", cams.astype(np.float16))
+for tgt, c in CAMS.items():
+    np.save(out / f"test_cams_{tgt}.npy", c.astype(np.float16))
 
-def summarise(g):
-    return {"n": int(len(g)), "pointing_hit_rate": float(g["pointing_hit"].mean()),
+def summarise(g, tgt):
+    return {"n": int(len(g)), "pointing_hit_rate": float(g[f"{tgt}_pointing_hit"].mean()),
             "chance_hit_rate": float(g["chance_hit"].mean()),
-            "median_energy_in_lesion": float(g["energy_in_lesion"].median()),
-            "median_lesion_area_frac": float(g["lesion_area_frac"].median()),
-            "median_energy_ratio": float(g["energy_ratio"].median())}
+            "median_energy_in_lesion": float(g[f"{tgt}_energy_in_lesion"].median()),
+            "median_lesion_area_frac": float(g[f"{tgt}_lesion_area_frac"].median()),
+            "median_energy_ratio": float(g[f"{tgt}_energy_ratio"].median())}
 groups = {"all": res, "benign": res[res.y == 0], "malignant": res[res.y == 1],
           "correct (<3 models wrong)": res[~res.hard_case], "hard (≥3 models wrong)": res[res.hard_case]}
-summ = {k: summarise(g) for k, g in groups.items() if len(g)}
-json.dump({"threshold": thr, "tolerance_px": 7, "cam_target": "malignant logit, mean of 5 fold models",
-           **summ}, open(out / "gradcam_summary.json", "w"), indent=2)
-
-print("\n============ Grad-CAM vs lesion masks (TEST set) ============")
-print(f"{'group':<26}{'n':>4}  {'pointing hit':>12}  {'chance':>7}  {'energy in lesion':>16}  {'lesion area':>11}  {'ratio':>6}")
-for k, s in summ.items():
-    print(f"{k:<26}{s['n']:>4}  {s['pointing_hit_rate']:>12.2f}  {s['chance_hit_rate']:>7.2f}  "
-          f"{s['median_energy_in_lesion']:>16.2f}  {s['median_lesion_area_frac']:>11.2f}  {s['median_energy_ratio']:>6.2f}")
+TITLES = {"true": "TRUE-CLASS Grad-CAM (does the model use the lesion for the right answer?)",
+          "malig": "MALIGNANT Grad-CAM (what pushes the score towards malignant?)"}
+summary = {"threshold": thr, "tolerance_px": 7, "cams": "mean of 5 fold models"}
+for tgt in ["true", "malig"]:
+    summ = {k: summarise(g, tgt) for k, g in groups.items() if len(g)}
+    summary[tgt] = summ
+    print(f"\n============ {TITLES[tgt]} ============")
+    print(f"{'group':<26}{'n':>4}  {'pointing hit':>12}  {'chance':>7}  {'energy in lesion':>16}  {'lesion area':>11}  {'ratio':>6}")
+    for k, v in summ.items():
+        print(f"{k:<26}{v['n']:>4}  {v['pointing_hit_rate']:>12.2f}  {v['chance_hit_rate']:>7.2f}  "
+              f"{v['median_energy_in_lesion']:>16.2f}  {v['median_lesion_area_frac']:>11.2f}  {v['median_energy_ratio']:>6.2f}")
+json.dump(summary, open(out / "gradcam_summary.json", "w"), indent=2)
 print("(pointing hit = hottest pixel inside lesion ±7px; chance = hit rate of a random point; "
       "ratio > 1 = heat concentrated on the lesion more than chance)")
 
 # ---------- 3) Galleries ----------
-def overlay(ax, i, title):
+def overlay(ax, i, title, cams):
     img = np.array(ds._cache[i].convert("L"))
     les = load_lesion_mask(P["data_root"], test_df.at[i, "label"], test_df.at[i, "fname"], SIZE)
     con = content_mask(P["data_root"], test_df.at[i, "label"], test_df.at[i, "fname"], SIZE)
@@ -106,7 +119,8 @@ def overlay(ax, i, title):
     ax.scatter([px], [py], marker="x", c="white", s=50, linewidths=2)
     ax.set_title(title, fontsize=8); ax.axis("off")
 
-def gallery(idx, fname, heading):
+def gallery(idx, fname, heading, tgt):
+    cams = CAMS[tgt]
     if not len(idx):
         return
     n = len(idx); cols = 4; rws = int(np.ceil(n / cols))
@@ -116,14 +130,14 @@ def gallery(idx, fname, heading):
     for a, i in zip(axs.flat, idx):
         r = res.loc[i]
         overlay(a, i, f"{r.fname}\ntrue {r.label} | p={r.prob_ensemble:.2f} | "
-                      f"{'HIT' if r.pointing_hit else 'miss'}")
+                      f"{'HIT' if r[tgt + '_pointing_hit'] else 'miss'}", cams)
     fig.suptitle(heading + "\n(green = radiologist lesion mask, colour = Grad-CAM, × = hottest point)",
                  fontweight="bold", fontsize=10)
     plt.savefig(out / fname, dpi=100, bbox_inches="tight"); plt.close(fig)
 
 ok = res[~res.hard_case]
 good = list(ok[ok.y == 0].nsmallest(4, "prob_ensemble").index) + list(ok[ok.y == 1].nlargest(4, "prob_ensemble").index)
-gallery(good, "gradcam_correct.png", "Confident correct predictions (test set)")
+gallery(good, "gradcam_correct.png", "Confident correct predictions — true-class Grad-CAM (test set)", "true")
 gallery(list(res[res.hard_case].sort_values("n_models_wrong", ascending=False).index[:16]),
-        "gradcam_hard_cases.png", "Hard cases: misclassified by ≥3 of 5 models (test set)")
+        "gradcam_hard_cases.png", "Hard cases (≥3 of 5 models wrong) — malignant Grad-CAM: what drove the error", "malig")
 print(f"\nSaved to: {out}")
