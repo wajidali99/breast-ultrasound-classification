@@ -1,6 +1,6 @@
 # Breast Ultrasound Classification with CNNs
 
-Leakage-aware deep learning pipeline for benign vs malignant classification of breast ultrasound images (BUSI dataset), with explainability, external validation, and cloud-portable training.
+Leakage-aware deep learning pipeline for benign vs malignant classification of breast ultrasound images (BUSI dataset), with explainability, external validation, and cloud GPU training on Kaggle.
 
 > ⚠️ Research project only — not a diagnostic tool.
 
@@ -14,7 +14,7 @@ Leakage-aware deep learning pipeline for benign vs malignant classification of b
 - [x] Step 6 — Held-out test evaluation
 - [x] Step 7 — Explainability (Grad-CAM vs lesion masks)
 - [x] Step 8 — External validation
-- [ ] Step 9 — Cloud training
+- [x] Step 9 — Cloud training: all experiments run on Kaggle cloud GPUs (NVIDIA T4)
 - [ ] Step 10 — Demo deployment
 - [ ] Step 11 — Report & slides
 
@@ -274,4 +274,4 @@ results/     figures and tables
 _Coming soon._
 
 ## Reproducibility
-All experiments use fixed seeds and group-aware splits. Code runs unchanged on Kaggle, local machines, and AWS SageMaker.
+All experiments use fixed seeds and group-aware splits. The five fold models reproduced identical validation AUCs across three independent runs (Steps 4, 5 and 6). Dataset paths are detected automatically, so the code is not tied to a single environment.
