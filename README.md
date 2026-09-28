@@ -4,6 +4,12 @@ Leakage-aware deep learning pipeline for benign vs malignant classification of b
 
 > ⚠️ Research project only — not a diagnostic tool.
 
+**Key results**
+- BUSI locked test (internal): ensemble AUC **0.977** — same hospital as training.
+- BUS-BRA (external, different country and scanners): AUC falls to **0.750** — single-centre results do not transfer.
+- v2 (mask-guided + aspect-crop, pre-registered): external AUC **0.776**, **+0.027** over v1 (95% CI +0.010 to +0.044).
+- Live demo: [Hugging Face Space](https://huggingface.co/spaces/Wajiddev99/breast-ultrasound-classifier) · Weights: [busi-densenet121-v2b](https://huggingface.co/Wajiddev99/busi-densenet121-v2b)
+
 ## Status
 - [x] Step 0 — Project setup
 - [x] Step 1 — Data audit & leak-free split
@@ -19,7 +25,9 @@ Leakage-aware deep learning pipeline for benign vs malignant classification of b
 - [ ] Step 11 — Report & slides
 
 ## Dataset
-BUSI — Breast Ultrasound Images Dataset (Al-Dhabyani et al., *Data in Brief*, 2020).
+BUSI — Breast Ultrasound Images Dataset (Al-Dhabyani et al., *Data in Brief*, 2020). Used for training, cross-validation and the internal test.
+
+BUS-BRA — Breast Ultrasound Dataset from Brazil (Gómez-Flores et al., *Medical Physics*, 2024). Used only for external validation (Step 8).
 
 ## Data audit findings (Step 1)
 
@@ -225,7 +233,7 @@ The five BUSI-trained DenseNet121 models and the BUSI-frozen threshold (0.225) w
 
 **Likely contributors** (not individually tested): different image framing — BUS-BRA images are mostly tall, narrow crops while BUSI images are wide, so after letterboxing the tissue occupies a different part of the input; different scanners and acquisition settings; a harder benign class in BUS-BRA (biopsied, BI-RADS 4 lesions that looked suspicious enough to sample); BUSI's single-centre training data (~420 images per fold); and residual optimism in the BUSI test estimate from same-centre similarity between scans.
 
-**Implications.** Single-centre BUSI results — including the ~99% accuracies often reported on this dataset — should not be read as clinical performance. Next steps: lesion-focused training (motivated by Step 7), multi-centre training, and domain adaptation, each evaluated on held-out external data.
+**Implications.** Single-centre BUSI results — including the ~99% accuracies often reported on this dataset — should not be read as clinical performance. Lesion-focused training was tested next (see v2 below); multi-centre training and domain adaptation remain future work.
 
 ## v2: mask-guided training (pre-registered follow-up)
 
@@ -267,19 +275,17 @@ Selection used BUSI cross-validation only; each variant's threshold was frozen f
 - **Model weights:** [huggingface.co/Wajiddev99/busi-densenet121-v2b](https://huggingface.co/Wajiddev99/busi-densenet121-v2b) — 5 fold models, config (threshold 0.335) and model card.
 - The demo applies exactly the evaluated decision rule: each fold model votes at its frozen threshold and the label is the majority of five votes. Preprocessing is identical to training.
 - ⚠️ Research demo only, not a medical device. Performance drops on images from other hospitals (Step 8).
-- The uploaded weights are a deterministic rebuild of the evaluated v2b models (four folds reproduce the original validation AUC exactly; fold 4 differs by 0.002).
+- The uploaded weights are a rebuild of the evaluated v2b models (four folds reproduce the original validation AUC exactly; fold 4 differs by 0.002).
 
 ## Repository structure
 ```
 configs/     experiment configs (YAML)
 src/         reusable code (data, models, training, evaluation)
-scripts/     entry-point scripts
-notebooks/   Kaggle notebooks
+scripts/     entry-point scripts (one per step)
+docs/        v2 pre-registration
+demo/        Gradio app for the Hugging Face Space
 results/     figures and tables
 ```
-
-## Results
-_Coming soon._
 
 ## Reproducibility
 All experiments use fixed seeds and group-aware splits. The five fold models reproduced identical validation AUCs across three independent runs (Steps 4, 5 and 6). Dataset paths are detected automatically, so the code is not tied to a single environment.
