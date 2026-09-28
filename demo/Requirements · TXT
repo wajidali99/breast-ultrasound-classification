@@ -1,0 +1,9 @@
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch
+torchvision
+timm
+huggingface_hub
+gradio
+numpy
+Pillow
+matplotlib
