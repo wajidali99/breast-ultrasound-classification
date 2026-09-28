@@ -15,7 +15,7 @@ Leakage-aware deep learning pipeline for benign vs malignant classification of b
 - [x] Step 7 — Explainability (Grad-CAM vs lesion masks)
 - [x] Step 8 — External validation
 - [x] Step 9 — Cloud training: all experiments run on Kaggle cloud GPUs (NVIDIA T4)
-- [ ] Step 10 — Demo deployment
+- [x] Step 10 — Demo deployment
 - [ ] Step 11 — Report & slides
 
 ## Dataset
@@ -260,6 +260,14 @@ Selection used BUSI cross-validation only; each variant's threshold was frozen f
 - **The sensitivity target does not transfer.** At its BUSI-derived threshold, v2b reaches 0.70 sensitivity on BUS-BRA (target 0.90), trading sensitivity for specificity compared with v1. Any real deployment would need site-specific calibration.
 
 **Disclosure.** The aspect-crop idea was inspired by seeing BUS-BRA's image framing in Step 8. BUS-BRA was not used to tune any setting and was evaluated once, but because the design was informed by this domain, the gain may be smaller on other unseen hospitals. v2b fold 3 reached its best epoch at 29/30, so the 30-epoch budget may be slightly short.
+
+## Live demo (Step 10)
+
+- **Web app:** [huggingface.co/spaces/Wajiddev99/breast-ultrasound-classifier](https://huggingface.co/spaces/Wajiddev99/breast-ultrasound-classifier) — upload a breast ultrasound image; the five v2b models vote benign/malignant and a Grad-CAM heatmap shows the supporting regions.
+- **Model weights:** [huggingface.co/Wajiddev99/busi-densenet121-v2b](https://huggingface.co/Wajiddev99/busi-densenet121-v2b) — 5 fold models, config (threshold 0.335) and model card.
+- The demo applies exactly the evaluated decision rule: each fold model votes at its frozen threshold and the label is the majority of five votes. Preprocessing is identical to training.
+- ⚠️ Research demo only, not a medical device. Performance drops on images from other hospitals (Step 8).
+- The uploaded weights are a deterministic rebuild of the evaluated v2b models (four folds reproduce the original validation AUC exactly; fold 4 differs by 0.002).
 
 ## Repository structure
 ```
